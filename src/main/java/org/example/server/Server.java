@@ -10,40 +10,35 @@ import java.io.*;
 import java.net.*;
 import java.nio.channels.*;
 import java.util.*;
-
+import java.util.concurrent.*;
 
 public class Server {
     private static final int PORT = 80805;
-    private static final TreeSet<City> collection = new TreeSet<>();
     private static final String SAVE_FILE = "collection.dat";
+    private static final CityCollection collection = new CityCollection();
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
+    private static volatile boolean isRunning = true;
 
     public static void main(String[] args) {
-        loadCollection();
+        Runtime.getRuntime().addShutdownHook(new Thread(Server::shutdown));
 
+        loadCollection();
+        startServer();
+    }
+
+    private static void startServer() {
         try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
             serverChannel.bind(new InetSocketAddress(PORT));
-            serverChannel.configureBlocking(false); // Неблокирующий режим
+            serverChannel.configureBlocking(false);
 
             Selector selector = Selector.open();
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            System.out.println("Сервер запущен " + PORT);
+            System.out.println("Сервер запущен на порту " + PORT);
 
-            while (true) {
-                selector.select(); // Блокируемся до готовности каналов
-                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
-
-                while (keys.hasNext()) {
-                    SelectionKey key = keys.next();
-                    keys.remove();
-
-                    if (key.isAcceptable()) {
-                        acceptClient(serverChannel, selector);
-                    }
-                    if (key.isReadable()) {
-                        processClientRequest(key);
-                    }
-                }
+            while (isRunning) {
+                selector.select(1000);
+                processSelectedKeys(selector);
             }
         } catch (IOException e) {
             System.err.println("Ошибка сервера: " + e.getMessage());
@@ -52,53 +47,87 @@ public class Server {
         }
     }
 
-    private static void acceptClient(ServerSocketChannel serverChannel, Selector selector)
-            throws IOException {
-        SocketChannel clientChannel = serverChannel.accept();
-        clientChannel.configureBlocking(false);
-        clientChannel.register(selector, SelectionKey.OP_READ);
-        System.out.println("Новый клиент подключен");
-    }
+    private static void processSelectedKeys(Selector selector) throws IOException {
+        Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
 
-    private static void processClientRequest(SelectionKey key) {
-        try (SocketChannel channel = (SocketChannel) key.channel();
-             ObjectInputStream in = new ObjectInputStream(Channels.newInputStream(channel));
-             ObjectOutputStream out = new ObjectOutputStream(Channels.newOutputStream(channel))) {
+        while (keys.hasNext()) {
+            SelectionKey key = keys.next();
+            keys.remove();
 
-            Request request = (Request) in.readObject();
-            Response response = handleCommand(request);
-            out.writeObject(response);
-
-        } catch (Exception e) {
-            System.err.println("Ошибка обработки запроса: " + e.getMessage());
+            if (key.isAcceptable()) acceptNewClient(key);
+            if (key.isReadable()) processRequest(key);
         }
     }
 
-    private static Response handleCommand(Request request) {
-        try {
-            Command command = CommandFactory.getCommand(request.getCommandName());
-            return command.execute(collection, request);
-        } catch (IllegalArgumentException e) {
-            return new Response("Ошибка: " + e.getMessage());
-        }
+    private static void acceptNewClient(SelectionKey key) throws IOException {
+        ServerSocketChannel server = (ServerSocketChannel) key.channel();
+        SocketChannel client = server.accept();
+        client.configureBlocking(false);
+        client.register(key.selector(), SelectionKey.OP_READ);
+        System.out.println("Новое подключение: " + client.getRemoteAddress());
     }
 
-    private static void loadCollection() {
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(SAVE_FILE))) {
-            Object obj = in.readObject();
-            if (obj instanceof TreeSet) {
-                collection.addAll((TreeSet<City>) obj);
+    private static void processRequest(SelectionKey key) {
+        executor.submit(() -> {
+            try (SocketChannel channel = (SocketChannel) key.channel();
+                 ObjectInputStream in = new ObjectInputStream(Channels.newInputStream(channel));
+                 ObjectOutputStream out = new ObjectOutputStream(Channels.newOutputStream(channel))) {
+
+                Request request = (Request) in.readObject();
+                Response response = processCommand(request);
+                out.writeObject(response);
+
+            } catch (Exception e) {
+                System.err.println("Ошибка обработки запроса: " + e.getMessage());
+            } finally {
+                key.cancel();
             }
+        });
+    }
+
+    private static Response processCommand(Request request) {
+        try {
+            Command command = CommandFactory.createCommand(request);
+            return command.execute(collection);
+        } catch (IllegalArgumentException e) {
+            return new Response("ERROR", e.getMessage());
         } catch (Exception e) {
-            System.err.println("Ошибка загрузки городов: " + e.getMessage());
+            return new Response("ERROR", "Внутренняя ошибка сервера");
         }
     }
 
-    private static void saveCollection() {
+    private static synchronized void loadCollection() {
+        File file = new File(SAVE_FILE);
+        if (!file.exists()) return;
+
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            TreeSet<City> loaded = (TreeSet<City>) in.readObject();
+            collection.getCities().addAll(loaded);
+            System.out.println("Загружено " + loaded.size() + " городов");
+        } catch (Exception e) {
+            System.err.println("Ошибка загрузки коллекции: " + e.getMessage());
+        }
+    }
+
+    private static synchronized void saveCollection() {
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(SAVE_FILE))) {
             out.writeObject(collection);
+            System.out.println("Коллекция сохранена (" + collection.getCities().size() + " городов)");
         } catch (Exception e) {
-            System.err.println("Ошибка сохранения колекции: " + e.getMessage());
+            System.err.println("Ошибка сохранения коллекции: " + e.getMessage());
         }
+    }
+
+    private static void shutdown() {
+        isRunning = false;
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+        System.out.println("Сервер остановлен");
     }
 }

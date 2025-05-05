@@ -12,7 +12,7 @@ public class UpdateCommand implements Command {
     private final long id;
     private final City updatedCity;
 
-    public UpdateCommand(long id, City updatedCity, CityFactory cityFactory) {
+    public UpdateCommand(long id, City updatedCity) {
         this.id = id;
         this.updatedCity = updatedCity;
     }
