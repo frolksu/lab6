@@ -16,7 +16,6 @@ public class CommandExecutor {
     private final Deque<String> history = new ArrayDeque<>(5);
 
     public Response sendRequest(Request request) {
-        public Response sendRequest(Request request) {
             addToHistory(request.getCommandName());
 
             try {

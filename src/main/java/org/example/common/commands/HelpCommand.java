@@ -5,7 +5,7 @@ import org.example.server.CityCollection;
 
 public class HelpCommand implements Command {
     @Override
-    public Response execute(CityCollection cityCollection) {
+    public Response execute() {
         String helpText = """
             Доступные команды:
                 help - показать справку

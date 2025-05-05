@@ -1,90 +1,104 @@
 package org.example.server;
 
+
 import org.example.common.Request;
 import org.example.common.Response;
+import org.example.common.commands.Command;
+import org.example.common.model.entity.City;
+
 import java.io.*;
 import java.net.*;
 import java.nio.channels.*;
-import java.util.logging.*;
+import java.util.*;
+
 
 public class Server {
-    private static final Logger logger = Logger.getLogger(Server.class.getName());
     private static final int PORT = 80805;
-    private ServerSocketChannel serverChannel;
-    private final CityCollection cityCollection;
-    private final CommandHandler commandHandler;
-
-    public Server() {
-        this.cityCollection = new CityCollection();
-        this.commandHandler = new CommandHandler();
-        loadInitialData();
-    }
-
-    private void loadInitialData() {
-        String filename = System.getenv("CITY_DATA_FILE");
-        if (filename != null && !filename.isEmpty()) {
-            try {
-                CityFileLoader.loadCities(cityCollection, filename);
-                logger.info("Коллекция успешно загружена из файла: " + filename);
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Ошибка загрузки данных из файла", e);
-            }
-        } else {
-            logger.warning("Переменная окружения CITY_DATA_FILE не установлена. Коллекция пуста.");
-        }
-    }
+    private static final TreeSet<City> collection = new TreeSet<>();
+    private static final String SAVE_FILE = "collection.dat";
 
     public static void main(String[] args) {
-        new Server().start();
-    }
+        loadCollection();
 
-    public void start() {
-        try {
-            serverChannel = ServerSocketChannel.open();
+        try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
             serverChannel.bind(new InetSocketAddress(PORT));
-            serverChannel.configureBlocking(false);
+            serverChannel.configureBlocking(false); // Неблокирующий режим
 
-            logger.info("Сервер запущен на порту " + PORT);
-            logger.info("Текущий размер коллекции: " + cityCollection.getCities().size());
+            Selector selector = Selector.open();
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            System.out.println("Сервер запущен " + PORT);
 
             while (true) {
-                SocketChannel clientChannel = serverChannel.accept();
-                if (clientChannel != null) {
-                    handleClient(clientChannel);
+                selector.select(); // Блокируемся до готовности каналов
+                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
+
+                while (keys.hasNext()) {
+                    SelectionKey key = keys.next();
+                    keys.remove();
+
+                    if (key.isAcceptable()) {
+                        acceptClient(serverChannel, selector);
+                    }
+                    if (key.isReadable()) {
+                        processClientRequest(key);
+                    }
                 }
             }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Критическая ошибка сервера", e);
+        } catch (IOException e) {
+            System.err.println("Ошибка сервера: " + e.getMessage());
         } finally {
-            saveDataBeforeShutdown();
+            saveCollection();
         }
     }
 
-    private void handleClient(SocketChannel clientChannel) {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Channels.newInputStream(clientChannel));
-             ObjectOutputStream oos = new ObjectOutputStream(
-                     Channels.newOutputStream(clientChannel))) {
+    private static void acceptClient(ServerSocketChannel serverChannel, Selector selector)
+            throws IOException {
+        SocketChannel clientChannel = serverChannel.accept();
+        clientChannel.configureBlocking(false);
+        clientChannel.register(selector, SelectionKey.OP_READ);
+        System.out.println("Новый клиент подключен");
+    }
 
-            Request request = (Request) ois.readObject();
-            Response response = commandHandler.handle(request);
-            oos.writeObject(response);
+    private static void processClientRequest(SelectionKey key) {
+        try (SocketChannel channel = (SocketChannel) key.channel();
+             ObjectInputStream in = new ObjectInputStream(Channels.newInputStream(channel));
+             ObjectOutputStream out = new ObjectOutputStream(Channels.newOutputStream(channel))) {
 
-            logger.info("Обработана команда: " + request.getCommandName());
+            Request request = (Request) in.readObject();
+            Response response = handleCommand(request);
+            out.writeObject(response);
+
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Ошибка обработки клиента", e);
+            System.err.println("Ошибка обработки запроса: " + e.getMessage());
         }
     }
 
-    private void saveDataBeforeShutdown() {
-        String filename = System.getenv("CITY_OUTDATA_FILE");
-        if (filename != null) {
-            try {
-                CityFileSaver.saveCities(cityCollection, filename);
-                logger.info("Коллекция сохранена в файл: " + filename);
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, "Ошибка сохранения коллекции", e);
+    private static Response handleCommand(Request request) {
+        try {
+            Command command = CommandFactory.getCommand(request.getCommandName());
+            return command.execute(collection, request);
+        } catch (IllegalArgumentException e) {
+            return new Response("Ошибка: " + e.getMessage());
+        }
+    }
+
+    private static void loadCollection() {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(SAVE_FILE))) {
+            Object obj = in.readObject();
+            if (obj instanceof TreeSet) {
+                collection.addAll((TreeSet<City>) obj);
             }
+        } catch (Exception e) {
+            System.err.println("Ошибка загрузки городов: " + e.getMessage());
+        }
+    }
+
+    private static void saveCollection() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(SAVE_FILE))) {
+            out.writeObject(collection);
+        } catch (Exception e) {
+            System.err.println("Ошибка сохранения колекции: " + e.getMessage());
         }
     }
 }

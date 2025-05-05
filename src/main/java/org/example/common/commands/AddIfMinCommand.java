@@ -6,12 +6,6 @@ import org.example.common.model.entity.City;
 import org.example.server.CityCollection;
 
 public class AddIfMinCommand implements Command {
-    private final City city;
-
-    public AddIfMinCommand(City city) {
-        this.city = city;
-    }
-
     @Override
     public Response execute(CityCollection cityCollection) {
         City city = CityFactory.createCity();

@@ -5,7 +5,7 @@ import org.example.server.CityCollection;
 
 public class ExitCommand implements Command {
     @Override
-    public Response execute(CityCollection collection) {
+    public Response execute() {
         return new Response("EXIT", "Завершение работы");
     }
 }

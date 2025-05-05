@@ -4,10 +4,8 @@ import org.example.common.Response;
 import org.example.server.CityCollection;
 
 public class RemoveAnyByGovernorCommand implements Command {
-    private String governorName;
-
     @Override
-    public Response execute(CityCollection collection) {
+    public Response execute(CityCollection collection, String governorName) {
         boolean removed = collection.removeAnyByGovernor(governorName);
         return new Response("OK", removed ? "Удалено" : "Не найдено");
     }

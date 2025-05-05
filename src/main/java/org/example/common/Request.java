@@ -7,14 +7,13 @@ import java.io.Serializable;
  */
 
 public class Request implements Serializable {
-    private final String commandName;
-    private final Object[] args;
+    private String commandName;
+    private Object data;
 
-    public Request(String commandName, Object... args) {
+    public Request(String commandName, Object data) {
         this.commandName = commandName;
-        this.args = args;
+        this.data = data;
     }
-    
     public String getCommandName() { return commandName; }
-    public Object[] getArgs() { return args; }
+    public Object getData() { return data; }
 }
