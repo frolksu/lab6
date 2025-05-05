@@ -67,15 +67,16 @@ public class CityCollection {
         return initialSize - cities.size();
     }
 
-    public synchronized void removeAnyByGovernor(String governorName) {
+    public synchronized boolean removeAnyByGovernor(String governorName) {
         Iterator<City> iterator = cities.iterator();
         while (iterator.hasNext()) {
             City c = iterator.next();
             if (c.getGovernor() != null && c.getGovernor().getName().equals(governorName)) {
                 iterator.remove();
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     public synchronized City getMinByGovernor() {

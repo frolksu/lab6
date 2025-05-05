@@ -1,6 +1,7 @@
 package org.example.common.model.collection;
 
-import org.example.model.entity.City;
+
+import org.example.common.model.entity.City;
 
 import java.util.Comparator;
 
