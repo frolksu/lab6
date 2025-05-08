@@ -15,6 +15,10 @@ public class CommandFactory {
     }
 
     public static Command createCommand(Request request) {
+        if (request == null || request.getCommandName() == null) {
+            throw new IllegalArgumentException("Пустой запрос");
+        }
+
         if (collection == null) {
             throw new IllegalStateException("CommandFactory не инициализирован. Вызовите init() перед использованием");
         }

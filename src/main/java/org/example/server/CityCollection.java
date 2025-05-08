@@ -4,12 +4,13 @@ package org.example.server;
 import org.example.common.model.entity.City;
 import org.example.common.model.entity.StandardOfLiving;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-public class CityCollection {
+public class CityCollection implements Serializable {
     private final TreeSet<City> cities;
     private final LocalDate initializationDate;
     private long nextId = 1;
