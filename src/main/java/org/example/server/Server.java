@@ -1,73 +1,103 @@
 package org.example.server;
 
-import java.io.IOException;
 import java.nio.*;
 import java.nio.channels.*;
 import java.net.*;
-import java.util.*;
+import java.io.*;
 
-/**
- * для теста!!! необходимо доработать
- */
+
+import org.example.common.Request;
 
 public class Server {
-    public static void main(String[] args) throws Exception {
-        Selector selector = Selector.open();
-        ServerSocketChannel serverChannel = ServerSocketChannel.open();
-        serverChannel.bind(new InetSocketAddress(8080));
-        serverChannel.configureBlocking(false);
-        serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+    private static final int PORT = 8080;
 
-        System.out.println("Сервер запущен...");
+    public static void main(String[] args) {
+        // 1. Загрузка коллекции из файла
+        CityCollection cityCollection = new CityCollection();
 
-        while (true) {
-            selector.select(); // Ждём событий
-            Set<SelectionKey> keys = selector.selectedKeys();
-            Iterator<SelectionKey> iter = keys.iterator();
+//        String filename = System.getenv("CITY_DATA_FILE");
+        String filename = "cities.csv"; // Для теста
+        if (filename != null) {
+            CityFileLoader.loadCities(cityCollection, filename);
+        } else {
+            System.out.println("Файл не указан. Коллекция пуста.");
+        }
+        // 2. Настройка NIO
+        try (ServerSocketChannel serverChannel = ServerSocketChannel.open();
+             Selector selector = Selector.open()) {
 
-            while (iter.hasNext()) {
-                SelectionKey key = iter.next();
-                iter.remove();
+            serverChannel.bind(new InetSocketAddress(PORT));
+            serverChannel.configureBlocking(false);
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-                if (!key.isValid()) { // Проверяем, валиден ли ключ
-                    continue;
-                }
+            System.out.println("Сервер запущен на порту " + PORT);
 
-                if (key.isAcceptable()) { // Новый клиент
-                    SocketChannel client = serverChannel.accept();
-                    client.configureBlocking(false);
-                    client.register(selector, SelectionKey.OP_READ);
-                    System.out.println("Клиент подключен: " + client.getRemoteAddress());
-                }
+            // 3. Главный цикл обработки запросов
+            while (true) {
+                selector.select(); // Блокируется до новых событий
 
-                if (key.isReadable()) { // Данные от клиента
-                    SocketChannel client = (SocketChannel) key.channel();
-                    ByteBuffer buffer = ByteBuffer.allocate(256);
-
-                    try {
-                        int bytesRead = client.read(buffer);
-
-                        if (bytesRead == -1) { // Клиент отключился
-                            System.out.println("Клиент отключился: " + client.getRemoteAddress());
-                            key.cancel();
-                            client.close();
-                            continue;
-                        }
-
-                        buffer.flip();
-                        String message = new String(buffer.array(), 0, bytesRead);
-                        System.out.println("Получено: " + message);
-
-                        // Отправляем эхо-ответ
-                        buffer.rewind();
-                        client.write(buffer);
-                    } catch (IOException e) {
-                        System.err.println("Ошибка при чтении: " + e.getMessage());
-                        key.cancel();
-                        client.close();
+                for (SelectionKey key : selector.selectedKeys()) {
+                    if (key.isAcceptable()) {
+                        acceptClient(selector, serverChannel);
+                    } else if (key.isReadable()) {
+                        processClientRequest(key);
                     }
                 }
+                selector.selectedKeys().clear();
             }
+        } catch (IOException e) {
+            System.err.println("Ошибка сервера: " + e.getMessage());
         }
+    }
+
+    private static void acceptClient(Selector selector, ServerSocketChannel server) throws IOException {
+        SocketChannel client = server.accept();
+        client.configureBlocking(false);
+        client.register(selector, SelectionKey.OP_READ);
+        System.out.println("Новый клиент: " + client.getRemoteAddress());
+    }
+
+    private static void processClientRequest(SelectionKey key) throws IOException {
+        SocketChannel client = (SocketChannel) key.channel();
+        try {
+            // 1. Чтение запроса
+            ByteBuffer buffer = ByteBuffer.allocate(8192);
+            int bytesRead = client.read(buffer);
+
+            if (bytesRead == -1) {
+                client.close();
+                return;
+            }
+
+            // 2. Десериализация запроса
+            buffer.flip();
+            Request request = deserializeRequest(buffer);
+
+            // 3. Выполнение команды
+            Object result = CommandFactory.createCommand(request);
+
+            // 4. Отправка ответа
+            sendResponse(client, result);
+        } catch (Exception e) {
+            sendError(client, e);
+        }
+    }
+
+    private static Request deserializeRequest(ByteBuffer buffer) throws IOException, ClassNotFoundException {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(buffer.array());
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+            return (Request) ois.readObject();
+        }
+    }
+
+    private static void sendResponse(SocketChannel client, Object result) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(result.toString().getBytes());
+        client.write(buffer);
+    }
+
+    private static void sendError(SocketChannel client, Exception e) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(("ERROR: " + e.getMessage()).getBytes());
+        client.write(buffer);
+        client.close();
     }
 }

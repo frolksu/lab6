@@ -36,40 +36,40 @@ public class CommandFactory {
                 case "min_by_governor": return new MinByGovernorCommand();
 
                 case "add":
-                    Object addData = request.getData();
+                    Object addData = request.getArgument();
                     if (addData instanceof City) {
                         return new AddCommand((City) addData);
                     }
                     return new AddCommand(addData.toString());
 
                 case "update":
-                    Object[] updateArgs = (Object[]) request.getData();
+                    Object[] updateArgs = (Object[]) request.getArgument();
                     return new UpdateCommand((Long) updateArgs[0], (City) updateArgs[1]);
 
                 case "remove_by_id":
-                    return new RemoveByIdCommand((Long) request.getData());
+                    return new RemoveByIdCommand((Long) request.getArgument());
 
                 case "add_if_min":
-                    City city = request.getData() instanceof City
-                            ? (City) request.getData()
+                    City city = request.getArgument() instanceof City
+                            ? (City) request.getArgument()
                             : CityFactory.createCity();
                     return new AddIfMinCommand(city);
 
                 case "remove_greater":
-                    return new RemoveGreaterCommand((City) request.getData());
+                    return new RemoveGreaterCommand((City) request.getArgument());
 
                 case "remove_any_by_governor":
-                    return new RemoveAnyByGovernorCommand(request.getData().toString());
+                    return new RemoveAnyByGovernorCommand(request.getArgument().toString());
 
                 case "count_less_than_standard_of_living":
-                    Object solData = request.getData();
+                    Object solData = request.getArgument();
                     if (solData instanceof StandardOfLiving) {
                         return new CountLessThanStandardOfLivingCommand((StandardOfLiving) solData);
                     }
                     return new CountLessThanStandardOfLivingCommand(solData.toString());
 
                 case "execute_script":
-                    return new ExecuteScriptCommand(request.getData().toString(), collection);
+                    return new ExecuteScriptCommand(request.getArgument().toString(), collection);
 
                 default:
                     throw new IllegalArgumentException("Неизвестная команда: " + commandName);

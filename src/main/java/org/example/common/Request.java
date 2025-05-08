@@ -8,12 +8,26 @@ import java.io.Serializable;
 
 public class Request implements Serializable {
     private String commandName;
-    private Object data;
+    private Object argument;
 
-    public Request(String commandName, Object data) {
+    public Request(String commandName, Object argument) {
         this.commandName = commandName;
-        this.data = data;
+        this.argument = argument;
     }
-    public String getCommandName() { return commandName; }
-    public Object getData() { return data; }
+
+    public String getCommandName() {
+        return commandName;
+    }
+
+    public Object getArgument() {
+        return argument;
+    }
+
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
+    }
+
+    public void setArgument(Object argument) {
+        this.argument = argument;
+    }
 }
