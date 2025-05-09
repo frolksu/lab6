@@ -23,7 +23,7 @@ public class Client {
                 Request request = createRequest(input);
                 if (request == null) continue;
 
-                // Отправка запроса
+                // Отправка заhпроса
                 oos.writeObject(request);
                 oos.flush();
 

@@ -7,13 +7,15 @@ import java.io.*;
 
 
 import org.example.common.Request;
+import org.example.common.Response;
+import org.example.common.commands.Command;
 
 public class Server {
     private static final int PORT = 8080;
+    private static CityCollection cityCollection = new CityCollection();
 
     public static void main(String[] args) {
         // 1. Загрузка коллекции из файла
-        CityCollection cityCollection = new CityCollection();
 
 //        String filename = System.getenv("CITY_DATA_FILE");
         String filename = "cities.csv"; // Для теста
@@ -70,14 +72,13 @@ public class Server {
             }
 
             // 2. Десериализация запроса
-            buffer.flip();
             Request request = deserializeRequest(buffer);
 
             // 3. Выполнение команды
-            Object result = CommandFactory.createCommand(request);
+            Command command = CommandFactory.createCommand(request);
+            Response response = command.execute(cityCollection);
+            sendResponse(client, response);
 
-            // 4. Отправка ответа
-            sendResponse(client, result);
         } catch (Exception e) {
             sendError(client, e);
         }
@@ -90,8 +91,12 @@ public class Server {
         }
     }
 
-    private static void sendResponse(SocketChannel client, Object result) throws IOException {
-        ByteBuffer buffer = ByteBuffer.wrap(result.toString().getBytes());
+    private static void sendResponse(SocketChannel client, Response response) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(response);
+
+        ByteBuffer buffer = ByteBuffer.wrap(baos.toByteArray());
         client.write(buffer);
     }
 
