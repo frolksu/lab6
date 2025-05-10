@@ -1,16 +1,19 @@
 package org.example.client;
 
-import java.io.*;
-import java.net.*;
-import java.util.Scanner;
 import org.example.common.Request;
+import org.example.common.Response;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 8080);
              ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-             BufferedReader reader = new BufferedReader(
-                     new InputStreamReader(socket.getInputStream()));
+             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
              Scanner scanner = new Scanner(System.in)) {
 
             System.out.println("Подключено к серверу. Введите команду (help для справки):");
@@ -20,31 +23,21 @@ public class Client {
 
                 if (input.equalsIgnoreCase("exit")) break;
 
-                Request request = createRequest(input);
-                if (request == null) continue;
+                try {
+                    Request request = RequestBuilder.buildRequest(input);
+                    oos.writeObject(request);
+                    oos.flush();
 
-                // Отправка заhпроса
-                oos.writeObject(request);
-                oos.flush();
-
-                // Чтение ответа (текстового)
-                String response = reader.readLine();
-                if (response == null) {
-                    System.out.println("Сервер закрыл соединение");
-                    break;
+                    Object response = ois.readObject();
+                    if (response instanceof Response) {
+                        System.out.println("Сервер: " + ((Response) response).getMessage());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка: " + e.getMessage());
                 }
-                System.out.println("Сервер: " + response);
             }
         } catch (IOException e) {
-            System.err.println("Ошибка клиента: " + e.getMessage());
+            System.err.println("Ошибка подключения: " + e.getMessage());
         }
-    }
-
-    private static Request createRequest(String input) {
-        String[] parts = input.split(" ", 2);
-        String command = parts[0];
-        Object argument = parts.length > 1 ? parts[1] : null;
-
-        return new Request(command, argument);
     }
 }

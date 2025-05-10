@@ -1,4 +1,4 @@
-package org.example.server;
+package org.example.common;
 
 
 import org.example.common.model.collection.IdGenerator;

@@ -4,14 +4,10 @@ import org.example.client.CityFactory;
 import org.example.common.Response;
 import org.example.common.model.entity.City;
 import org.example.server.CityCollection;
-import org.example.server.CityParser;
+import org.example.common.CityParser;
 
 public class AddCommand implements Command {
     private final City city;
-
-    public AddCommand() {
-        this.city = null;
-    }
 
     public AddCommand(String csvLine) {
         this.city = CityParser.parseFromCSV(csvLine);

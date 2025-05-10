@@ -1,22 +1,27 @@
 package org.example.server;
 
-import java.nio.*;
-import java.nio.channels.*;
-import java.net.*;
-import java.io.*;
-
-
 import org.example.common.Request;
 import org.example.common.Response;
-import org.example.common.commands.Command;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 
 public class Server {
     private static final int PORT = 8080;
-    private static CityCollection cityCollection = new CityCollection();
+    private final CityCollection cityCollection;
+    private final CommandProcessor processor;
 
-    public static void main(String[] args) {
-        // 1. Загрузка коллекции из файла
+    public Server() {
+        this.cityCollection = new CityCollection();
+        this.processor = new CommandProcessor(cityCollection);
+        loadInitialData();
+    }
 
+    private void loadInitialData() {
 //        String filename = System.getenv("CITY_DATA_FILE");
         String filename = "cities.csv"; // Для теста
         if (filename != null) {
@@ -24,7 +29,9 @@ public class Server {
         } else {
             System.out.println("Файл не указан. Коллекция пуста.");
         }
-        // 2. Настройка NIO
+    }
+
+    public void start() throws IOException {
         try (ServerSocketChannel serverChannel = ServerSocketChannel.open();
              Selector selector = Selector.open()) {
 
@@ -34,75 +41,34 @@ public class Server {
 
             System.out.println("Сервер запущен на порту " + PORT);
 
-            // 3. Главный цикл обработки запросов
             while (true) {
-                selector.select(); // Блокируется до новых событий
+                selector.select();
 
                 for (SelectionKey key : selector.selectedKeys()) {
                     if (key.isAcceptable()) {
-                        acceptClient(selector, serverChannel);
+                        ConnectionAcceptor.accept(selector, serverChannel);
                     } else if (key.isReadable()) {
-                        processClientRequest(key);
+                        handleClientRequest(key);
                     }
                 }
                 selector.selectedKeys().clear();
             }
-        } catch (IOException e) {
-            System.err.println("Ошибка сервера: " + e.getMessage());
         }
     }
 
-    private static void acceptClient(Selector selector, ServerSocketChannel server) throws IOException {
-        SocketChannel client = server.accept();
-        client.configureBlocking(false);
-        client.register(selector, SelectionKey.OP_READ);
-        System.out.println("Новый клиент: " + client.getRemoteAddress());
-    }
-
-    private static void processClientRequest(SelectionKey key) throws IOException {
+    private void handleClientRequest(SelectionKey key) throws IOException {
         SocketChannel client = (SocketChannel) key.channel();
         try {
-            // 1. Чтение запроса
-            ByteBuffer buffer = ByteBuffer.allocate(8192);
-            int bytesRead = client.read(buffer);
-
-            if (bytesRead == -1) {
-                client.close();
-                return;
-            }
-
-            // 2. Десериализация запроса
-            Request request = deserializeRequest(buffer);
-
-            // 3. Выполнение команды
-            Command command = CommandFactory.createCommand(request);
-            Response response = command.execute(cityCollection);
-            sendResponse(client, response);
-
+            Request request = RequestReader.readRequest(client);
+            Response response = processor.process(request);
+            ResponseSender.sendResponse(client, response);
         } catch (Exception e) {
-            sendError(client, e);
+            ResponseSender.sendResponse(client, new Response("ERROR", e.getMessage()));
+            client.close();
         }
     }
 
-    private static Request deserializeRequest(ByteBuffer buffer) throws IOException, ClassNotFoundException {
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(buffer.array());
-             ObjectInputStream ois = new ObjectInputStream(bais)) {
-            return (Request) ois.readObject();
-        }
-    }
-
-    private static void sendResponse(SocketChannel client, Response response) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(response);
-
-        ByteBuffer buffer = ByteBuffer.wrap(baos.toByteArray());
-        client.write(buffer);
-    }
-
-    private static void sendError(SocketChannel client, Exception e) throws IOException {
-        ByteBuffer buffer = ByteBuffer.wrap(("ERROR: " + e.getMessage()).getBytes());
-        client.write(buffer);
-        client.close();
+    public static void main(String[] args) throws IOException {
+        new Server().start();
     }
 }

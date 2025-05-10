@@ -1,7 +1,9 @@
-package org.example.server;
+package org.example.common;
 
 
 import org.example.common.model.entity.City;
+import org.example.server.CityCollection;
+
 import java.io.*;
 import java.util.logging.*;
 
