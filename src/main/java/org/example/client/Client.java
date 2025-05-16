@@ -3,17 +3,15 @@ package org.example.client;
 import org.example.common.Request;
 import org.example.common.Response;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 8080);
-             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+             DataInputStream dis = new DataInputStream(socket.getInputStream());
              Scanner scanner = new Scanner(System.in)) {
 
             System.out.println("Подключено к серверу. Введите команду (help для справки):");
@@ -25,15 +23,33 @@ public class Client {
 
                 try {
                     Request request = RequestBuilder.buildRequest(input);
-                    oos.writeObject(request);
-                    oos.flush();
 
-                    Object response = ois.readObject();
-                    if (response instanceof Response) {
-                        System.out.println("Сервер: " + ((Response) response).getMessage());
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                        oos.writeObject(request);
+                        oos.flush();
                     }
+
+                    byte[] data = baos.toByteArray();
+                    dos.write(data);
+                    dos.flush();
+
+                    // Чтение ответа от сервера
+                    int respLen = dis.readInt();
+                    byte[] respData = new byte[respLen];
+                    dis.readFully(respData);  // Читаем полный ответ от сервера
+
+                    // Десериализация ответа
+                    try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(respData))) {
+                        Object response = ois.readObject();
+                        if (response instanceof Response) {
+                            System.out.println("Сервер: " + ((Response) response).getData());
+                        }
+                    }
+
                 } catch (Exception e) {
                     System.err.println("Ошибка: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
         } catch (IOException e) {

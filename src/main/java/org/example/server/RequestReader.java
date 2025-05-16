@@ -13,7 +13,10 @@ public class RequestReader {
 
     public static Request readRequest(SocketChannel client) throws IOException, ClassNotFoundException {
         ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-        client.read(buffer);
+        int bytesRead = client.read(buffer);
+        if (bytesRead == -1) {
+            throw new IOException("Соединение закрыто");
+        }
         buffer.flip();
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(buffer.array(), 0, buffer.limit());

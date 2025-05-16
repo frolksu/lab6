@@ -10,13 +10,28 @@ import java.nio.channels.SocketChannel;
 
 public class ResponseSender {
     public static void sendResponse(SocketChannel client, Response response) throws IOException {
+        if (client.isBlocking()) {
+            client.configureBlocking(false);
+        }
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(response);
+            oos.flush();
         }
-        ByteBuffer buffer = ByteBuffer.wrap(baos.toByteArray());
+
+        byte[] data = baos.toByteArray();
+        int dataLength = data.length;
+
+        ByteBuffer buffer = ByteBuffer.allocate(dataLength + 4);
+        buffer.putInt(dataLength);  // Сначала записываем длину данных
+        buffer.put(data);           // Затем записываем сами данные
+        buffer.flip();              // Подготавливаем буфер к записи
+
         while (buffer.hasRemaining()) {
             client.write(buffer);
         }
+
+        System.out.println("Отправлено: " + response.getData());
     }
 }

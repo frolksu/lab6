@@ -6,6 +6,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 public class City implements Comparable<City>, Serializable {
+    private static final long serialVersionUID = 1L;
+
     long id;
     String name;
     Coordinates coordinates;

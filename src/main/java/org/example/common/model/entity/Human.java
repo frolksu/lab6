@@ -3,7 +3,9 @@ package org.example.common.model.entity;
 import java.io.Serializable;
 
 public class Human implements Serializable {
-    private String name; //Поле не может быть null
+    private static final long serialVersionUID = 1L;
+
+    private String name;
 
     public Human(String governorName) {
         this.name = governorName;

@@ -3,6 +3,8 @@ package org.example.common.model.entity;
 import java.io.Serializable;
 
 public class Coordinates implements  Serializable {
+    private static final long serialVersionUID = 1L;
+
     private Float y;
     private Float x;
 
