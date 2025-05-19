@@ -27,16 +27,17 @@ public class CityCollection implements Serializable {
     public LocalDate getInitializationDate() {
         return initializationDate;
     }
+    public synchronized void updateNextId(long id) {
+        if (id >= nextId) {
+            nextId = id + 1;
+        }
+    }
 
     public synchronized void add(City city) {
         if (city.getId() == 0) {
-
             city.setId(nextId++);
         } else {
-
-            if (city.getId() >= nextId) {
-                nextId = city.getId() + 1;
-            }
+            updateNextId(city.getId());
         }
         cities.add(city);
     }

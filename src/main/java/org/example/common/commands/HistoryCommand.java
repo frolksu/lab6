@@ -8,7 +8,7 @@ public class HistoryCommand implements Command {
 
     @Override
     public Response execute(CityCollection collection) {
-        return new Response("OK", "История команд хранится на клиенте");
+        return new Response("OK", "Запрос истории обработан на клиенте");
     }
 }
 

@@ -1,7 +1,6 @@
 package org.example.common;
 
 
-import org.example.common.model.collection.IdGenerator;
 import org.example.common.model.entity.City;
 import org.example.common.model.entity.Coordinates;
 import org.example.common.model.entity.Human;
@@ -12,19 +11,19 @@ public class CityParser {
         try {
             String[] parts = csvLine.split(",");
             return new City(
-                    IdGenerator.getNextId(),
-                    parts[0].trim(),
+                    Long.parseLong(parts[0].trim()),
+                    parts[1].trim(),
                     new Coordinates(
-                            Float.parseFloat(parts[1].trim()),
-                            Float.parseFloat(parts[2].trim())
+                            Float.parseFloat(parts[2].trim()),
+                            Float.parseFloat(parts[3].trim())
                     ),
-                    Float.parseFloat(parts[3].trim()),
-                    Integer.parseInt(parts[4].trim()),
-                    parts.length > 5 ? Float.parseFloat(parts[5].trim()) : null,
-                    Integer.parseInt(parts[6].trim()),
-                    parts.length > 7 ? Long.parseLong(parts[7].trim()) : null,
-                    parts.length > 8 ? StandardOfLiving.valueOf(parts[8].trim()) : null,
-                    parts.length > 9 ? new Human(parts[9].trim()) : null
+                    Float.parseFloat(parts[4].trim()),
+                    Integer.parseInt(parts[5].trim()),
+                    parts.length > 6 ? Float.parseFloat(parts[6].trim()) : null,
+                    Integer.parseInt(parts[7].trim()),
+                    parts.length > 8 ? Long.parseLong(parts[8].trim()) : null,
+                    parts.length > 9 ? StandardOfLiving.valueOf(parts[9].trim()) : null,
+                    parts.length > 10 ? new Human(parts[10].trim()) : null
             );
         } catch (Exception e) {
             System.err.println("Ошибка парсинга города: " + e.getMessage());

@@ -1,6 +1,5 @@
 package org.example.server;
 
-import org.example.common.model.collection.IdGenerator;
 import org.example.common.model.entity.City;
 import org.example.common.model.entity.Coordinates;
 import org.example.common.model.entity.Human;
@@ -20,7 +19,7 @@ public class CityFileLoader {
                 City city = parseCity(line);
                 if (city != null) {
                     collection.add(city);
-                    IdGenerator.updateId(city.getId());
+                    collection.updateNextId(city.getId());
                 }
             }
         } catch (FileNotFoundException e) {

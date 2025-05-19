@@ -1,6 +1,5 @@
 package org.example.common.commands;
 
-import org.example.client.CityFactory;
 import org.example.common.Response;
 import org.example.common.model.entity.City;
 import org.example.server.CityCollection;

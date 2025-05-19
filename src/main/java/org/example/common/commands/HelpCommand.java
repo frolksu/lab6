@@ -17,8 +17,8 @@ public class HelpCommand implements Command {
                 clear - очистить коллекцию
                 execute_script - выполнить скрипт
                 exit - завершить программу
-                add_if_min - добавить элемент, если он меньше минимального
-                remove_greater - удалить элементы, превышающие заданный
+                add_if_min - добавить город, если он меньше минимального по населению
+                remove_greater - удалить города, превышающие заданный по населению
                 history - показать последние 5 команд
                 remove_any_by_governor - удалить элемент по governor
                 min_by_governor - показать элемент с минимальным governor

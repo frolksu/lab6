@@ -1,8 +1,10 @@
 package org.example.client;
 
 import org.example.common.Request;
+import org.example.common.model.entity.City;
 import org.example.common.model.entity.StandardOfLiving;
 import org.example.common.model.entity.Human;
+
 
 public class RequestBuilder {
     public static Request buildRequest(String input) throws IllegalArgumentException {
@@ -19,18 +21,17 @@ public class RequestBuilder {
                 case "exit":
                 case "history":
                 case "min_by_governor":
-                case "remove_greater":
                     return new Request(commandName, null);
 
                 case "add":
+                case "remove_greater":
                 case "add_if_min":
                     return new Request(commandName, CityFactory.createCity());
 
                 case "update":
-                    if (argString == null) throw new IllegalArgumentException("Требуется ID и данные города");
-                    String[] updateArgs = argString.split(" ", 2);
-                    long id = Long.parseLong(updateArgs[0]);
-                    return new Request(commandName, new Object[]{id, CityFactory.createCity()});
+                    if (argString == null) throw new IllegalArgumentException("Требуется ID");
+                    long id = Long.parseLong(argString);
+                    return new Request("check_update", id);
 
                 case "remove_by_id":
                     return new Request(commandName, Long.parseLong(argString));

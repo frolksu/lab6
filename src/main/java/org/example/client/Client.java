@@ -5,9 +5,13 @@ import org.example.common.Response;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Scanner;
 
 public class Client {
+    private static final int HISTORY_SIZE = 5;
+    private static final Deque<String> commandHistory = new ArrayDeque<>();
     public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 8080);
              DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
@@ -22,6 +26,12 @@ public class Client {
                 if (input.equalsIgnoreCase("exit")) break;
 
                 try {
+                    if (input.equalsIgnoreCase("history")) {
+                        showHistory();
+                        continue;
+                    }
+                    addToHistory(input);
+
                     Request request = RequestBuilder.buildRequest(input);
 
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -34,16 +44,14 @@ public class Client {
                     dos.write(data);
                     dos.flush();
 
-                    // Чтение ответа от сервера
                     int respLen = dis.readInt();
                     byte[] respData = new byte[respLen];
-                    dis.readFully(respData);  // Читаем полный ответ от сервера
+                    dis.readFully(respData);
 
-                    // Десериализация ответа
                     try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(respData))) {
                         Object response = ois.readObject();
                         if (response instanceof Response) {
-                            System.out.println("Сервер: " + ((Response) response).getData());
+                            System.out.println(((Response) response).getData());
                         }
                     }
 
@@ -56,4 +64,24 @@ public class Client {
             System.err.println("Ошибка подключения: " + e.getMessage());
         }
     }
+    private static void addToHistory(String command) {
+        if (commandHistory.size() >= HISTORY_SIZE) {
+            commandHistory.removeFirst();
+        }
+        commandHistory.addLast(command);
+    }
+
+    private static void showHistory() {
+        if (commandHistory.isEmpty()) {
+            System.out.println("История команд пуста");
+            return;
+        }
+
+        System.out.println("Последние " + HISTORY_SIZE + " команд:");
+        int counter = 1;
+        for (String cmd : commandHistory) {
+            System.out.println(counter++ + ". " + cmd);
+        }
+    }
+
 }

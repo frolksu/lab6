@@ -1,6 +1,5 @@
 package org.example.client;
 
-import org.example.common.model.collection.IdGenerator;
 import org.example.common.model.entity.City;
 import org.example.common.model.entity.Coordinates;
 import org.example.common.model.entity.Human;
@@ -18,7 +17,7 @@ public class CityFactory {
     public static City createCity() {
         System.out.println("\nСоздание нового города");
 
-        long id = IdGenerator.getNextId();
+        long id = 0;
         String name = readName();
         Coordinates coordinates = readCoordinates();
         Float area = readPositiveFloat("площадь");

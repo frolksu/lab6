@@ -46,6 +46,9 @@ public class CommandFactory {
                     Object[] updateArgs = (Object[]) request.getArgument();
                     return new UpdateCommand((Long) updateArgs[0], (City) updateArgs[1]);
 
+                case "check_update":
+                    return new CheckUpdateCommand((Long) request.getArgument());
+
                 case "remove_by_id":
                     return new RemoveByIdCommand((Long) request.getArgument());
 
