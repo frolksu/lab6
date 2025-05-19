@@ -36,11 +36,7 @@ public class CommandFactory {
                 case "min_by_governor": return new MinByGovernorCommand();
 
                 case "add":
-                    Object addData = request.getArgument();
-                    if (addData instanceof City) {
-                        return new AddCommand((City) addData);
-                    }
-                    return new AddCommand(addData.toString());
+                    return new AddCommand((City) request.getArgument());
 
                 case "update":
                     return new UpdateCommand((City) request.getArgument());

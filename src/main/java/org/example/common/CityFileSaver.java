@@ -4,23 +4,22 @@ package org.example.common;
 import org.example.common.model.entity.City;
 import org.example.server.CityCollection;
 
-import java.io.*;
-import java.util.logging.*;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class CityFileSaver {
-    private static final Logger logger = Logger.getLogger(CityFileSaver.class.getName());
-
-    public static void saveCities(CityCollection collection, String filename) throws IOException {
-        File file = new File(filename);
-        try (PrintWriter writer = new PrintWriter(file)) {
-            collection.getCities().forEach(city -> {
-                writer.println(convertToCSV(city));
-            });
-            logger.info("Сохранено " + collection.getCities().size() + " городов");
+    public static void saveCities(CityCollection collection, String filename) {
+        try (FileWriter writer = new FileWriter(filename)) {
+            for (City city : collection.getCities()) {
+                writer.write(convertToCsv(city) + "\n");
+            }
+            System.out.println("Сохранено городов: " + collection.getCities().size());
+        } catch (IOException e) {
+            System.err.println("Ошибка сохранения: " + e.getMessage());
         }
     }
 
-    private static String convertToCSV(City city) {
+    private static String convertToCsv(City city) {
         return String.join(",",
                 String.valueOf(city.getId()),
                 city.getName(),
@@ -28,11 +27,14 @@ public class CityFileSaver {
                 String.valueOf(city.getCoordinates().getY()),
                 String.valueOf(city.getArea()),
                 String.valueOf(city.getPopulation()),
-                city.getMetersAboveSeaLevel() != null ? String.valueOf(city.getMetersAboveSeaLevel()) : "",
+                city.getMetersAboveSeaLevel() != null ?
+                        String.valueOf(city.getMetersAboveSeaLevel()) : "",
                 String.valueOf(city.getCarCode()),
-                city.getAgglomeration() != null ? String.valueOf(city.getAgglomeration()) : "",
-                city.getStandardOfLiving() != null ? city.getStandardOfLiving().name() : "",
-                city.getGovernor() != null ? city.getGovernor().getName() : ""
+                city.getAgglomeration() != null ?
+                        String.valueOf(city.getAgglomeration()) : "",
+                city.getStandardOfLiving().name(),
+                city.getGovernor() != null ?
+                        city.getGovernor().getName() : ""
         );
     }
 }

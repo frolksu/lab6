@@ -39,6 +39,7 @@ public class ExecuteScriptCommand implements Command {
     }
 
     private Response processScriptFile(File file) {
+        StringBuilder output = new StringBuilder();
         try (Scanner scanner = new Scanner(file, StandardCharsets.UTF_8)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
@@ -48,9 +49,9 @@ public class ExecuteScriptCommand implements Command {
                 if ("ERROR".equals(response.getMessage())) {
                     return response;
                 }
-                System.out.println(response.getData());
+                output.append(response.getData()).append("\n");
             }
-            return new Response("OK", "Скрипт выполнен успешно");
+            return new Response("OK", output.toString());
         } catch (IOException e) {
             return new Response("ERROR", "Ошибка чтения файла: " + e.getMessage());
         }
@@ -113,7 +114,7 @@ public class ExecuteScriptCommand implements Command {
         return Long.parseLong(args.split(" ")[0]);
     }
 
-    private City parseCityFromArgs(String args) throws Exception {
+    private City parseCityFromArgs(String args)  {
         String[] parts = args.split(";");
         if (parts.length < 10) {
             throw new IllegalArgumentException("Недостаточно параметров для создания города");
@@ -128,7 +129,7 @@ public class ExecuteScriptCommand implements Command {
                 ),
                 Float.parseFloat(parts[3]), // area
                 Integer.parseInt(parts[4]), // population
-                parts[5].isEmpty() ? null : Float.parseFloat(parts[5]), // metersAboveSeaLevel
+                Float.parseFloat(parts[5]), // metersAboveSeaLevel
                 Integer.parseInt(parts[6]), // carCode
                 parts[7].isEmpty() ? null : Long.parseLong(parts[7]), // agglomeration
                 StandardOfLiving.valueOf(parts[8].toUpperCase()), // standardOfLiving
