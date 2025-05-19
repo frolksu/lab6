@@ -18,6 +18,6 @@ public class CheckUpdateCommand implements Command {
         if (existing == null) {
             return new Response("ERROR", "Город с ID=" + id + " не найден");
         }
-        return new Response("OK", new UpdateCommand(id, existing));
+        return new Response("OK", existing);
     }
 }

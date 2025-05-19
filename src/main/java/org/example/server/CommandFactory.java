@@ -43,8 +43,7 @@ public class CommandFactory {
                     return new AddCommand(addData.toString());
 
                 case "update":
-                    Object[] updateArgs = (Object[]) request.getArgument();
-                    return new UpdateCommand((Long) updateArgs[0], (City) updateArgs[1]);
+                    return new UpdateCommand((City) request.getArgument());
 
                 case "check_update":
                     return new CheckUpdateCommand((Long) request.getArgument());

@@ -40,7 +40,7 @@ public class City implements Comparable<City>, Serializable {
     public String getName() { return name; }
     public Coordinates getCoordinates() { return coordinates; }
     public Float getArea() { return area; }
-    public int getPopulation() { return population; }
+    public Integer getPopulation() { return population; }
     public Float getMetersAboveSeaLevel() { return metersAboveSeaLevel; }
     public Integer getCarCode() { return carCode; }
     public Long getAgglomeration() { return agglomeration; }
@@ -49,6 +49,10 @@ public class City implements Comparable<City>, Serializable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setCoordinates(Coordinates coordinates) {
+        this.coordinates = coordinates;
     }
 
     public void setArea(Float area) {

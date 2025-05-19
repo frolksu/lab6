@@ -2,6 +2,7 @@ package org.example.client;
 
 import org.example.common.Request;
 import org.example.common.Response;
+import org.example.common.model.entity.City;
 
 import java.io.*;
 import java.net.Socket;
@@ -31,6 +32,62 @@ public class Client {
                         continue;
                     }
                     addToHistory(input);
+
+                    if (input.startsWith("update ")) {
+                        Request checkRequest = RequestBuilder.buildRequest(input);
+
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                            oos.writeObject(checkRequest);
+                            oos.flush();
+                        }
+
+                        byte[] data = baos.toByteArray();
+                        dos.write(data);
+                        dos.flush();
+
+                        int respLen = dis.readInt();
+                        byte[] respData = new byte[respLen];
+                        dis.readFully(respData);
+
+                        Response checkResponse;
+                        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(respData))) {
+                            checkResponse = (Response) ois.readObject();
+                        }
+
+                        if (checkResponse.getMessage().equals("ERROR")) {
+                            System.out.println(checkResponse.getData());
+                            continue;
+                        }
+
+                        City existingCity = (City) checkResponse.getData();
+                        City updatedCity = new City(existingCity.getId(),existingCity.getName(), existingCity.getCoordinates(), existingCity.getArea(), existingCity.getPopulation(),existingCity.getMetersAboveSeaLevel(),existingCity.getCarCode(),existingCity.getAgglomeration(),existingCity.getStandardOfLiving(),existingCity.getGovernor());updatedCity.setId(existingCity.getId()); // Важно сохранить ID
+
+                        CityFactory.updateCityFields(updatedCity);
+
+                        Request updateRequest = new Request("update", updatedCity);
+
+                        ByteArrayOutputStream updateBaos = new ByteArrayOutputStream();
+                        try (ObjectOutputStream oos = new ObjectOutputStream(updateBaos)) {
+                            oos.writeObject(updateRequest);
+                            oos.flush();
+                        }
+
+                        byte[] updateData = updateBaos.toByteArray();
+                        dos.write(updateData);
+                        dos.flush();
+
+                        int updateRespLen = dis.readInt();
+                        byte[] updateRespData = new byte[updateRespLen];
+                        dis.readFully(updateRespData);
+
+                        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(updateRespData))) {
+                            Response updateResponse = (Response) ois.readObject();
+                            System.out.println(updateResponse.getData());
+                        }
+
+                        continue;
+                    }
 
                     Request request = RequestBuilder.buildRequest(input);
 

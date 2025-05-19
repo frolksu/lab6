@@ -24,9 +24,9 @@ public class ResponseSender {
         int dataLength = data.length;
 
         ByteBuffer buffer = ByteBuffer.allocate(dataLength + 4);
-        buffer.putInt(dataLength);  // Сначала записываем длину данных
-        buffer.put(data);           // Затем записываем сами данные
-        buffer.flip();              // Подготавливаем буфер к записи
+        buffer.putInt(dataLength);
+        buffer.put(data);
+        buffer.flip();
 
         while (buffer.hasRemaining()) {
             client.write(buffer);
