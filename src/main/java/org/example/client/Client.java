@@ -14,7 +14,7 @@ public class Client {
     private static final int HISTORY_SIZE = 5;
     private static final Deque<String> commandHistory = new ArrayDeque<>();
     public static void main(String[] args) {
-        try (Socket socket = new Socket("localhost", 8080);
+        try (Socket socket = new Socket("localhost", 8181);
              DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
              DataInputStream dis = new DataInputStream(socket.getInputStream());
              Scanner scanner = new Scanner(System.in)) {

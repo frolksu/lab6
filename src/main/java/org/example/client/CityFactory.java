@@ -201,13 +201,13 @@ public class CityFactory {
                 Object newValue;
                 T currentValue = getter.get();
 
-                if (currentValue instanceof Float) {
+                if (currentValue instanceof Float || (currentValue == null && fieldName.equals("Площадь"))) {
                     newValue = Float.parseFloat(input);
                     if (fieldName.equals("Площадь") && (Float) newValue <= 0) {
                         System.out.println("Ошибка: площадь должна быть положительной!");
                         continue;
                     }
-                } else if (currentValue instanceof Integer) {
+                } else if (currentValue instanceof Integer || (currentValue == null && fieldName.equals("Население"))) {
                     newValue = Integer.parseInt(input);
                     if (fieldName.equals("Население") && (Integer) newValue <= 0) {
                         System.out.println("Ошибка: население должно быть положительным!");
@@ -218,9 +218,9 @@ public class CityFactory {
                         System.out.println("Ошибка: код должен быть от 1 до 1000!");
                         continue;
                     }
-                } else if (currentValue instanceof Long) {
+                } else if (currentValue instanceof Long || (currentValue == null && fieldName.equals("Агломерация"))) {
                     newValue = Long.parseLong(input);
-                } else if (currentValue instanceof String) {
+                } else if (currentValue instanceof String || (currentValue == null && fieldName.equals("Название"))) {
                     newValue = input;
                     if (((String) newValue).isEmpty()) {
                         System.out.println("Ошибка: значение не может быть пустым!");

@@ -15,7 +15,7 @@ import java.util.Iterator;
 public class Server {
     private static final String DATA_FILE = "cities.csv"; // Добавляем константу
     private static CityCollection cityCollection;
-    private static final int PORT = 8080;
+    private static final int PORT = 8181;
     private final CommandProcessor processor;
 
     public Server() {
@@ -26,8 +26,8 @@ public class Server {
     }
 
     private void loadInitialData() {
-//        String filename = System.getenv("DATA_FILE");
-        String filename = "cities.csv"; // Для теста
+        String filename = System.getenv("DATA_FILE");
+//        String filename = "cities.csv"; // Для теста
         if (filename != null) {
             CityFileLoader.loadCities(cityCollection, filename);
         } else {
